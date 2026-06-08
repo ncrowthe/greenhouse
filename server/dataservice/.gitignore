@@ -1,0 +1,9 @@
+# RPA
+*.wal
+
+#Nodejs
+*node_modules*
+
+/setenv.sh
+/setenv.bat
+/greenhouseconfig.txt

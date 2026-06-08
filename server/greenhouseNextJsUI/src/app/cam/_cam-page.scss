@@ -1,0 +1,7 @@
+@use '@carbon/react/scss/spacing' as *;
+
+.timelapse-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
