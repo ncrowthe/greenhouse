@@ -81,9 +81,11 @@ def getPhotoSettings():
         if isinstance(e, OSError) and resp: # If the error is an OSError the socket has to be closed.
             print(resp)
             resp.close()
-        print("configure(): CONNECTION ERROR " + str(e))
+        print("configure(): CONNECTION ERROR.  Using default settings. " + str(e))
 
-    print(f"Timelapse period updated to {timelapse_period} minutes")        
+    print(f"Timelapse period updated to {timelapse_period} minutes")   
+    print(f"Image size updated to {imageXPixels}x{imageYPixels} pixels") 
+    
     timelapse_period = timelapse_period * 60 # minutes to seconds
     return timelapse_period, imageXPixels, imageYPixels
 
@@ -97,7 +99,7 @@ def checkInternet():
         return False
 
 # Function to wait for internet connection
-def waitForInternet(max_attempts=100):
+def waitForInternet(max_attempts=10):
     attempts = 0
     while not checkInternet() and attempts < max_attempts:
         attempts += 1
@@ -105,7 +107,7 @@ def waitForInternet(max_attempts=100):
         sleep(1)
 
     if not checkInternet():
-        print("Internet connection not available after 100 attempts")
+        print("Internet connection not available after {} attempts".format(max_attempts))
         return False
 
     return True

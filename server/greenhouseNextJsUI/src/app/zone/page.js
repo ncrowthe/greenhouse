@@ -4,18 +4,16 @@ import './_landing-page.scss';
 
 import React, { useState, useEffect, useCallback } from 'react';
 
-import { Grid, Column, Button } from '@carbon/react';
+import { Grid, Column, Button, RadioButton, RadioButtonGroup } from '@carbon/react';
 
 const config = require('../config/config.js');
 
 import { IoRainyOutline } from 'react-icons/io5';
 import { FaFireFlameSimple } from 'react-icons/fa6';
-import { CiLight } from 'react-icons/ci';
+import { GiFly } from "react-icons/gi";
 import { WiHumidity } from 'react-icons/wi';
 import { Knob } from 'primereact/knob';
 import Image from 'next/image';
-
-const endpoints = require('../config/endpoints.js');
 
 export default function Zone(zoneParam) {
   const zone = zoneParam.searchParams.id;
@@ -29,12 +27,29 @@ export default function Zone(zoneParam) {
       : zoneParam.searchParams.color;
 
   const [waterLevel, setWaterLevel] = useState(parseInt(hydration));
-  const [waterColor, setWaterColor] = useState(color);
+  const [scanLevel, setScanLevel] = useState(0);  
+  const [waterColor, setWaterColor] = useState('color');
   const [pumpState, setPumpState] = useState('OFF');
+  const [lightState, setLightState] = useState('OFF');
+  const [cveColor, setCveColor] = useState('green');  
   const [direction, setDirection] = useState('DOWN');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState();
+
+  const writeLightConfig = (state, zone) => {
+    let configData = JSON.stringify({
+      lightState: state,
+      lightOnHH: '00:00',
+      lightOffHH: '00:00',
+    });
+
+    console.log('Got: ' + JSON.stringify(configData));
+
+    config.light(configData, { id: zone });
+
+    setLightState(state);
+  };
 
   const setDial = () => {
     if (waterLevel <= 15) {
@@ -81,8 +96,37 @@ export default function Zone(zoneParam) {
       setWaterLevel((waterLevel) => waterLevel - 3);
     }
 
+    if (lightState === 'ON' && scanLevel < 97) {
+      setScanLevel((scanLevel) => scanLevel + 3);
+    } else if (lightState === 'ON' && scanLevel >= 97) {
+      setScanLevel(100);
+      setLightState("1 CVE");
+      setCveColor('red');
+    }
+
     setDial();
     //getConfigData();
+  };
+
+  const handleLightChange = (state, zone) => {
+
+    let newState = 'OFF';
+
+    if (state === 'ON') {
+      newState = 'OFF';
+    } else if (state === 'OFF') {
+      newState = 'ON';
+    } 
+    console.log('state: ' + state);
+    console.log('newstate: ' + newState);
+
+    // Delay the state update and config write by 0.5 second (adjust as needed)
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setLightState(newState);
+      writeLightConfig(newState, zone);
+      setIsSubmitting(false);
+    }, 1000);
   };
 
   const handleOnSubmit = (state, zone) => {
@@ -142,7 +186,7 @@ export default function Zone(zoneParam) {
   useEffect(() => {
     const dInterval = setInterval(() => tick(zone), 1000);
     return () => clearInterval(dInterval);
-  }, [zone, pumpState, waterLevel, tick]);
+  }, [zone, pumpState, lightState, waterLevel, tick]);
 
   if (loading) {
     return <Grid className="config-page">Loading</Grid>;
@@ -151,6 +195,23 @@ export default function Zone(zoneParam) {
   if (error) {
     return `Error! ${error}`;
   }
+
+  let lightButton =  (
+     <div>
+      <Button
+        disabled={isSubmitting}
+        kind="primary"
+        renderIcon={GiFly}
+        inputid="light1"
+        name="CVEScan"
+        value={lightState}
+        onClick={(e) => handleLightChange(lightState, zone)}
+      >
+        {' '}
+        {isSubmitting ? 'Updating...' : lightState}
+      </Button>
+    </div>
+  );
 
   // Set Zone 1 pump button and highlight the one that is enabled
   let waterButton = {};
@@ -175,9 +236,6 @@ export default function Zone(zoneParam) {
   return (
     <Grid className="landing-page" fullWidth>
       <Column lg={16} md={8} sm={4} className="landing-page__r2">
-        <h1>&nbsp;Zone {zone}</h1>
-      </Column>
-      <Column lg={16} md={8} sm={4} className="landing-page__r2">
         <Grid className="tabs-group-content">
           <Column md={2} lg={3} sm={1} className="landing-page__tab-content">
             <h3>Water</h3>
@@ -196,20 +254,20 @@ export default function Zone(zoneParam) {
           <Column></Column>
 
           <Column md={2} lg={3} sm={1} className="landing-page__tab-content">
-            <h3>Light</h3>
+            <h3>Humidity</h3>
             <br></br>
             <Knob
-              value="2.3"
+              value="60"
               min={0}
-              max={10}
-              valueTemplate={'{value}klx'}
+              max={100}
+              valueTemplate={'{value}%'}
               valueColor="Green"
               rangeColor="lightgray"
             />
 
             <Button
               kind="primary"
-              renderIcon={CiLight}
+              renderIcon={WiHumidity}
               inputid="light1"
               name="lightOn"
               value="ON"
@@ -246,26 +304,18 @@ export default function Zone(zoneParam) {
           <Column></Column>
 
           <Column md={2} lg={3} sm={1} className="landing-page__tab-content">
-            <h3>Humidity</h3>
+            <h3>CVE Scan</h3>
             <br></br>
             <Knob
-              value="62"
+              value={scanLevel}
               min={0}
               max={100}
               valueTemplate={'{value}%'}
-              valueColor="Green"
+              valueColor={cveColor}
               rangeColor="lightgray"
             />
 
-            <Button
-              kind="primary"
-              renderIcon={WiHumidity}
-              inputid="hum1"
-              name="humOn"
-              value="ON"
-            >
-              ON
-            </Button>
+            {lightButton}
           </Column>
         </Grid>
       </Column>
@@ -288,8 +338,8 @@ export default function Zone(zoneParam) {
               pumpState === 'AUTO' && direction === 'UP'
                 ? '/basilruleautoon.jpg'
                 : pumpState === 'AUTO' && direction === 'DOWN'
-                ? '/basilruleautooff.jpg'
-                : '/watering.jpg'
+                  ? '/basilruleautooff.jpg'
+                  : '/watering.jpg'
             }
             width={1200}
             height={400}
