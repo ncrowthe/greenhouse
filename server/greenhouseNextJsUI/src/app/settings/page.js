@@ -93,9 +93,6 @@ export default function LandingPage() {
                   <strong>Senscap Air Sensor:</strong> <br />
                   {endpoints.sensecapDatalogEndpoint}
                   <br /> <br />
-                  <strong>Senscap API Key:</strong> <br />
-                  {endpoints.sensecapAuth}
-                  <br /> <br />
                   <small>
                     {' '}
                     <b>{process.env.NODE_ENV}</b> mode.
