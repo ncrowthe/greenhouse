@@ -21,6 +21,7 @@ CAMERA_NUMBER = 4
 GREENHOUSE_SERVER_URL =  'http://86.4.208.162' 
 BASE_DIR = '/home/ncrowther/Pictures/greenhouse'
 DEVICE_NAME = "zone" + str(CAMERA_NUMBER)
+CAM_NAME = "cam" + str(CAMERA_NUMBER)
 
 WAIT_TIME =  60 * 15 # Photo every 15 mins
 IMAGE_SIZE = (2592, 1944)
@@ -141,7 +142,7 @@ def postPhoto(image, imageXPixels, imageYPixels, timestamp):
 
     # Post photo to server
     url = GREENHOUSE_SERVER_URL + '/photo'
-    myobj = {'_id': timestamp, 'cam': CAMERA_NUMBER, 'photo': image_64, 'timestamp': timestamp}
+    myobj = {'_id': timestamp, 'cam': CAM_NAME, 'photo': image_64, 'timestamp': timestamp}
     try:
         res = requests.post(url, data=myobj, timeout=30)
         print("POST:" + str(res))
