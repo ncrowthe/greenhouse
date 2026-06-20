@@ -130,8 +130,21 @@ def generateTimestamp():
     timestamp = str(timestamp)[0:19]
     return timestamp
 
-def postPhoto(image, imageXPixels, imageYPixels, timestamp):
-
+def postPhoto(image, imageXPixels, imageYPixels, timestamp, max_retries=None, retry_delay=60):
+    """
+    Post photo to server with retry logic until status 200 is returned.
+    
+    Args:
+        image: Path to the image file
+        imageXPixels: Image width in pixels
+        imageYPixels: Image height in pixels
+        timestamp: Timestamp string
+        max_retries: Maximum number of retry attempts (None for infinite retries)
+        retry_delay: Delay in seconds between retry attempts (default 60)
+    
+    Returns:
+        True if photo was successfully posted (status 200), False if image was discarded
+    """
     log.info("Post photo to server")
 
     image_64 = base64.b64encode(open(image, "rb").read())
@@ -140,27 +153,46 @@ def postPhoto(image, imageXPixels, imageYPixels, timestamp):
     log.info("Image length: {}".format(imageLen))
 
     # Discard if the image is less than a defined size
-    NO_IMAGE = imageXPixels * imageYPixels * 0.05  # Image size below which it is discarded    
+    NO_IMAGE = imageXPixels * imageYPixels * 0.05  # Image size below which it is discarded
     if (imageLen < NO_IMAGE):
         log.info("Image too dark. Discarding")
         return False
 
-    # Wait until WIFI connected
-    if not waitForInternet():
-        log.info("Skipping photo upload due to missing internet connection")
-        return False
-
-    # Post photo to server
+    # Post photo to server with retry logic
     url = GREENHOUSE_SERVER_URL + '/photo'
     myobj = {'_id': timestamp, 'cam': CAM_NAME, 'photo': image_64, 'timestamp': timestamp}
-    try:
-        res = requests.post(url, data=myobj, timeout=30)
-        log.info("POST:" + str(res))
-        return True
-    except Exception as e:
-        log.info(f'Failed to send photo. {type(e)}: {e}')
-        log.info("Message: {}".format(e))
-        return False
+    
+    attempt = 0
+    while True:
+        attempt += 1
+        
+        # Wait until WIFI connected before each attempt
+        if not waitForInternet():
+            log.info(f"Attempt {attempt}: No internet connection. Retrying in {retry_delay} seconds...")
+            sleep(retry_delay)
+            continue
+        
+        try:
+            res = requests.post(url, data=myobj, timeout=30)
+            log.info(f"Attempt {attempt}: POST response - Status: {res.status_code}, Response: {res}")
+            
+            if res.status_code == 200:
+                log.info("Photo successfully posted with status 200")
+                return True
+            else:
+                log.info(f"Attempt {attempt}: Received status {res.status_code}, retrying in {retry_delay} seconds...")
+                
+        except Exception as e:
+            log.info(f'Attempt {attempt}: Failed to send photo. {type(e)}: {e}')
+        
+        # Check if we've reached max retries
+        if max_retries is not None and attempt >= max_retries:
+            log.info(f"Max retries ({max_retries}) reached. Giving up on this photo.")
+            return False
+        
+        # Wait before retrying
+        log.info(f"Waiting {retry_delay} seconds before retry...")
+        sleep(retry_delay)
 
 
 def deletePhoto(file):
@@ -169,7 +201,7 @@ def deletePhoto(file):
        os.remove(file)
        log.info("Deleted")
 
-def takePhoto(timestamp, hostname, ip):
+def takePhoto(timestamp, hostname, ip, timelapse_period):
 
     # Start camera and wait
     picam2.start()
@@ -179,6 +211,8 @@ def takePhoto(timestamp, hostname, ip):
     image = BASE_DIR + str(timestamp) + '.jpg'
 
     picam2.capture_file(image)
+
+    picam2.stop()
 
     # specified font size
     font = ImageFont.truetype("/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf", 32)
@@ -190,15 +224,16 @@ def takePhoto(timestamp, hostname, ip):
     I1 = ImageDraw.Draw(img)
 
     #Define the coordinates for the rectangle
-    xy = [(0, 0), (390, 112)]
+    xy = [(0, 0), (390, 144)]
 
     #Draw a filled black rectangle
     I1.rectangle(xy, outline="white", fill="black", width = 4)
 
-    # Add timestamp and hostname to the image
+    # Add timestamp, hostname, IP and timelapse period to the image
     I1.text((10, 10), timestamp, font=font, fill="white")
     I1.text((10, 36), hostname, font=font, fill="white")
     I1.text((10, 66), ip, font=font, fill="white")
+    I1.text((10, 96), f"Period: {timelapse_period // 60} min", font=font, fill="white")
 
     # Save the edited image
     img.save(image)
@@ -212,27 +247,74 @@ def takePhoto(timestamp, hostname, ip):
 
 hostname, ip = initialiseInternet()
 
-# Generate timestamp
-timestamp = generateTimestamp()
-log.info("Photo" + str(timestamp))
-
+# Get initial photo settings
 timelapse_period, imageXPixels, imageYPixels = getPhotoSettings()
 
+# Initialize camera with initial settings
 picam2 = initialiseCamera(imageXPixels, imageYPixels)
 
 log.info(f"Using settings: {imageXPixels}x{imageYPixels} pixels")
 
-image = takePhoto(timestamp, hostname, ip)
+# Track time for photo capture and settings refresh
+last_photo_time = 0
+last_settings_check_time = 0
+CHECK_INTERVAL = 60  # Check settings every 60 seconds (1 minute)
 
-picam2.stop()
+try:
+    while True:
+        current_time = time()
+        
+        # Check settings (every 1 minute)
+        log.info("Checking for updated photo settings...")
+        new_timelapse_period, new_imageXPixels, new_imageYPixels = getPhotoSettings()
+        
+        # If image size changed, reinitialize camera
+        if new_imageXPixels != imageXPixels or new_imageYPixels != imageYPixels:
+            log.info(f"Image size changed from {imageXPixels}x{imageYPixels} to {new_imageXPixels}x{new_imageYPixels}")
+            picam2.stop()
+            picam2.close()
+            imageXPixels = new_imageXPixels
+            imageYPixels = new_imageYPixels
+            picam2 = initialiseCamera(imageXPixels, imageYPixels)
+        
+        # Update timelapse period
+        if new_timelapse_period != timelapse_period:
+            log.info(f"Timelapse period changed from {timelapse_period} to {new_timelapse_period} seconds")
+            timelapse_period = new_timelapse_period
+        
+        last_settings_check_time = current_time
+        
+        # Check if it's time to take a photo
+        if current_time - last_photo_time >= timelapse_period:
+            # Generate timestamp
+            timestamp = generateTimestamp()
+            log.info("Taking photo: " + str(timestamp))
+            
+            # Take photo
+            image = takePhoto(timestamp, hostname, ip, timelapse_period)
 
-status = postPhoto(image, imageXPixels, imageYPixels, timestamp)
 
-if (status == True):
-   deletePhoto(image)
+            # Post photo to server
+            status = postPhoto(image, imageXPixels, imageYPixels, timestamp, 10, retry_delay=5)
+            
+            if status == True:
+                deletePhoto(image)
+            
+            last_photo_time = current_time
+            
+            log.info(f"Next photo in {timelapse_period} seconds")
+        
+        # Sleep for a short interval to avoid busy waiting
+        sleep(CHECK_INTERVAL)
 
-log.info(f"Waiting for next timelapse: {timelapse_period} seconds")
-
-print(timelapse_period) # Return the timelapse period in seconds to the calling script
-sys.exit(0)  
+except KeyboardInterrupt:
+    log.info("Timelapse stopped by user")
+    picam2.stop()
+    picam2.close()
+    sys.exit(0)
+except Exception as e:
+    log.error(f"Unexpected error in main loop: {e}")
+    picam2.stop()
+    picam2.close()
+    sys.exit(1)
  
