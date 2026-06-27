@@ -26,7 +26,7 @@ logging.basicConfig(filename="timelapse.log",
 log = logging.getLogger('picam')
 log.setLevel(logging.DEBUG)
 
-CAMERA_NUMBER = 4
+CAMERA_NUMBER = 1
 #GREENHOUSE_SERVER_URL =  'https://foxhound-hip-initially.ngrok-free.app'
 GREENHOUSE_SERVER_URL =  'http://86.4.208.162' 
 BASE_DIR = '/home/ncrowther/Pictures/greenhouse'
@@ -236,6 +236,9 @@ def takePhoto(timestamp, hostname, ip, timelapse_period):
     I1.text((10, 96), f"Period: {timelapse_period // 60} min", font=font, fill="white")
 
     # Save the edited image
+    
+    # Display the image
+    #img.show()
     img.save(image)
 
     log.info("Photo taken ")
