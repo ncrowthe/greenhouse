@@ -102,7 +102,7 @@ app.get('/docs', async (req, res) => {
   await cloudantLib.findAllDocs(service, logDbName).then(function (docs) {
 
     const purgeWindow = 48 // Hours
-    purge(res, purgeWindow, logDbName);  
+    purge(res, purgeWindow, logDbName);
     res.status(200);
     res.set('Access-Control-Allow-Origin', '*');
     res.send(docs);
@@ -115,15 +115,17 @@ app.get('/docs', async (req, res) => {
 
     res.status(200);
     res.set('Access-Control-Allow-Origin', '*');
-    res.send({"Docs": [        {
-            "_id": "2000-01-91T00:00:00",
-            "airTemperature": 0,
-            "leafTemperature": 0,
-            "humidity": 0,
-            "co2": 0,
-            "vpd": 0,
-            "lux": 0
-        }]});
+    res.send({
+      "Docs": [{
+        "_id": "2000-01-91T00:00:00",
+        "airTemperature": 0,
+        "leafTemperature": 0,
+        "humidity": 0,
+        "co2": 0,
+        "vpd": 0,
+        "lux": 0
+      }]
+    });
   })
 
 
@@ -155,8 +157,8 @@ app.post('/light', async (req, res) => {
       "fanState": originalDoc.fanState,
       "heaterState": originalDoc.heaterState,
       "humidifierState": originalDoc.humidifierState,
-      "camState": originalDoc.camState,  
-      "camTimelapse": originalDoc.camTimelapse,         
+      "camState": originalDoc.camState,
+      "camTimelapse": originalDoc.camTimelapse,
       "wateringDuration": originalDoc.wateringDuration,
       "wateringTimes": [
         originalDoc.wateringTimes[0],
@@ -211,8 +213,8 @@ app.post('/heat', async (req, res) => {
       "fanState": originalDoc.fanState,
       "heaterState": inputDoc.heaterState,
       "humidifierState": originalDoc.humidifierState,
-      "camState": originalDoc.camState,  
-      "camTimelapse": originalDoc.camTimelapse,       
+      "camState": originalDoc.camState,
+      "camTimelapse": originalDoc.camTimelapse,
       "wateringDuration": originalDoc.wateringDuration,
       "wateringTimes": [
         originalDoc.wateringTimes[0],
@@ -267,8 +269,8 @@ app.post('/water', async (req, res) => {
       "fanState": originalDoc.fanState,
       "heaterState": originalDoc.heaterState,
       "humidifierState": originalDoc.humidifierState,
-      "camState": originalDoc.camState,  
-      "camTimelapse": originalDoc.camTimelapse,       
+      "camState": originalDoc.camState,
+      "camTimelapse": originalDoc.camTimelapse,
       "wateringDuration": inputDoc.wateringDuration,
       "wateringTimes": [
         inputDoc.timeHH1,
@@ -357,7 +359,7 @@ app.post('/fan', async (req, res) => {
 
   const id = checkId(req, res);
   if (id == undefined) return;
-    
+
   const inputDoc = req.body;
 
   console.log('Set fan ' + JSON.stringify(inputDoc));
@@ -548,12 +550,12 @@ app.post('/timelapse', async (req, res) => {
       "fanState": originalDoc.fanState,
       "heaterState": originalDoc.heaterState,
       "humidifierState": originalDoc.humidifierState,
-      "camState": inputDoc.camState,  
-      "camTimelapse": inputDoc.camTimelapse,   
-      "camState": inputDoc.camState,  
-      "camTimelapse": inputDoc.camTimelapse,     
+      "camState": inputDoc.camState,
+      "camTimelapse": inputDoc.camTimelapse,
+      "camState": inputDoc.camState,
+      "camTimelapse": inputDoc.camTimelapse,
       "camImageXPixels": inputDoc.camImageXPixels,
-      "camImageYPixels": inputDoc.camImageYPixels,    
+      "camImageYPixels": inputDoc.camImageYPixels,
       "wateringDuration": originalDoc.wateringDuration,
       "wateringTimes": [
         originalDoc.wateringTimes[0],
@@ -605,8 +607,8 @@ app.post('/config', async (req, res) => {
     "fanState": inputDoc.fanState,
     "heaterState": inputDoc.heaterState,
     "humidifierState": inputDoc.humidifierState,
-    "camState": inputDoc.camState,  
-    "camTimelapse": inputDoc.camTimelapse,     
+    "camState": inputDoc.camState,
+    "camTimelapse": inputDoc.camTimelapse,
     "wateringDuration": inputDoc.wateringDuration,
     "wateringTimes": [
       inputDoc.wateringTimes[0],
@@ -703,200 +705,215 @@ app.get('/config', async (req, res) => {
   })
 })
 
-  // ///////////////////// Write Photo ////////////////////
-  app.post('/photo', async (req, res) => {
+// ///////////////////// Write Photo ////////////////////
+app.post('/photo', async (req, res) => {
 
-    const newDoc = req.body;
-    console.log('Write photo to cam ' + newDoc.cam);
+  const newDoc = req.body;
+  console.log('Write photo to cam ' + newDoc.cam);
 
-    const camId = newDoc.cam
-    photoDb = getPhotoDb(camId);
-    console.log('Write photo to: ' + photoDb);
+  const camId = newDoc.cam
+  photoDb = getPhotoDb(camId);
+  console.log('Write photo to: ' + photoDb);
 
-    var timestamp = new Date().toISOString();
+  var timestamp = new Date().toISOString();
 
-    const doc = {
-      "_id": timestamp,
-      "photo": newDoc.photo,
-      "timestamp": timestamp
+  const doc = {
+    "_id": timestamp,
+    "photo": newDoc.photo,
+    "timestamp": timestamp
+  }
+
+  await cloudantLib.createDoc(service, photoDb, doc).then(function (ret) {
+
+    console.error('Created photo');
+
+    res.status(200);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(timestamp);
+
+  }, function (err) {
+    console.error('[App] Cloudant DB Failure in create photo: ' + err)
+    res.status(500);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(err);
+  })
+
+})
+
+function getLatestPhoto(docs) {
+  photos = docs.Docs
+  let latest = photos.length
+  let latestPhoto = photos[latest - 1]
+
+}
+
+// //////////////// Get Latest Photo ////////////////////////
+app.get('/photo', async (req, res) => {
+
+  const camId = req.query.camId
+  photoDb = getPhotoDb(camId);
+  console.log('Get latest photo from: ' + photoDb);
+
+  await cloudantLib.findLatestDoc(service, photoDb).then(function (docs) {
+
+    const photos = docs && docs.Docs ? docs.Docs : [];
+    const latestPhoto = photos.length ? photos[0] : null;
+
+    let doc = []
+    if (latestPhoto) {
+      doc[0] = latestPhoto;
     }
 
-    await cloudantLib.createDoc(service, photoDb, doc).then(function (ret) {
+    const returnDocs = {
+      "Docs": doc
+    }
 
-      console.error('Created photo');
+    res.status(200);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(returnDocs);
+
+  }, function (err) {
+    console.error('[App] Cloudant DB Failure in get photo: ' + err)
+    res.status(500);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(err);
+  })
+
+
+
+})
+
+// //////////////// Get All Photos ////////////////////////
+app.get('/photos', async (req, res) => {
+
+  const camId = req.query.camId
+
+  photoDb = getPhotoDb(camId);
+  console.log('Get all photos from: ' + photoDb);
+
+  const purgeWindow = 12  // Hours
+  await purge(res, purgeWindow, photoDb);
+
+  await cloudantLib.findAllDocs(service, photoDb).then(function (docs) {
+
+    res.status(200);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(docs);
+
+  }, function (err) {
+    console.error('[App] Cloudant DB Failure in get photos: ' + err)
+    res.status(500);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(err);
+  })
+
+})
+
+
+
+// Create cloudant doc
+async function createDoc(doc, res, dbName) {
+
+  console.log('[App] Create doc:' + JSON.stringify(doc.id));
+
+  await cloudantLib.createDoc(service, dbName, doc).then(function (ret) {
+
+    console.log('[App] Created doc');
+
+    return ret
+
+  }, function (err) {
+    console.error('[App] Cloudant DB Failure in create photo doc: ' + err);
+    res.status(500);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(err);
+  });
+}
+
+/**
+ * Find and update document in Cloudant database.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
+async function updateDoc(res, dbName, id, newDoc) {
+  console.log('Update doc');
+
+  await cloudantLib.findById(service, dbName, id).then(function (doc) {
+
+    console.log('Updating doc: ' + id);
+
+    cloudantLib.updateDoc(service, dbName, doc, newDoc).then(function (doc) {
 
       res.status(200);
       res.set('Access-Control-Allow-Origin', '*');
-      res.send(timestamp);
+      res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+
+      res.send(doc);
 
     }, function (err) {
-      console.error('[App] Cloudant DB Failure in create photo: ' + err)
+      console.error('[App] Cloudant DB Failure in update doc: ' + err)
       res.status(500);
       res.set('Access-Control-Allow-Origin', '*');
-      res.send(err);
-    })
-
-  })
-
-  // //////////////// Get Latest Photo ////////////////////////
-  app.get('/photo', async (req, res) => {
-
-    const camId = req.query.camId
-    photoDb = getPhotoDb(camId);
-    console.log('Get latest photos from: ' + photoDb);
-
-    await cloudantLib.findAllDocs(service, photoDb).then(function (docs) {
-
-      photos = docs.Docs
-      let latest = photos.length
-      let latestPhoto = photos[latest - 1]
-
-      res.status(200);
-      res.set('Access-Control-Allow-Origin', '*');
-      res.send(latestPhoto);
-
-    }, function (err) {
-      console.error('[App] Cloudant DB Failure in get photo: ' + err)
-      res.status(500);
-      res.set('Access-Control-Allow-Origin', '*');
+      res.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
       res.send(err);
     })
 
 
+  }, function (err) {
 
+    console.error('[App] Cloudant DB cannot find: ' + id)
+    res.status(500);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.send(err);
   })
 
-  // //////////////// Get All Photos ////////////////////////
-  app.get('/photos', async (req, res) => {
+}
 
-    const camId = req.query.camId
+/**
+ * Purge expired documents from Cloudant database.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
+async function purge(res, purgeWindow, dbName) {
 
-    photoDb = getPhotoDb(camId);
-    console.log('Get all photos from: ' + photoDb);
+  console.log('Purge docs in ' + dbName);
 
-    const purgeWindow = 12  // Hours
-    await purge(res, purgeWindow, photoDb);
+  await cloudantLib.getExpiredDocs(service, purgeWindow, dbName).then(function (docs) {
+    cloudantLib.deleteDocs(service, dbName, docs);
 
-    await cloudantLib.findAllDocs(service, photoDb).then(function (docs) {
+  }, function (err) {
+    console.error('[App] Cloudant DB Failure in purge docs: ' + err);
+    res.status(500);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(err);
+  });
+}
 
-      res.status(200);
-      res.set('Access-Control-Allow-Origin', '*');
-      res.send(docs);
+// ////// Helper function to get photoDb from cameraId passed in query param ///
+function getPhotoDb(camId) {
 
-    }, function (err) {
-      console.error('[App] Cloudant DB Failure in get photos: ' + err)
-      res.status(500);
-      res.set('Access-Control-Allow-Origin', '*');
-      res.send(err);
-    })
+  camId = camId.toLowerCase();
+  console.log("Selected db " + camId)
+  return camId;
+}
 
-  })
-
-  
-
-  // Create cloudant doc
-  async function createDoc(doc, res, dbName) {
-
-    console.log('[App] Create doc:' + JSON.stringify(doc.id));
-
-    await cloudantLib.createDoc(service, dbName, doc).then(function (ret) {
-
-      console.log('[App] Created doc');
-
-      return ret
-
-    }, function (err) {
-      console.error('[App] Cloudant DB Failure in create photo doc: ' + err);
-      res.status(500);
-      res.set('Access-Control-Allow-Origin', '*');
-      res.send(err);
-    });
-  }
-
-  /**
-   * Find and update document in Cloudant database.
-   * @param {Object} res - The response object.
-   * @returns {void}
-   */
-  async function updateDoc(res, dbName, id, newDoc) {
-    console.log('Update doc');
-
-    await cloudantLib.findById(service, dbName, id).then(function (doc) {
-
-      console.log('Updating doc: ' + id);
-
-      cloudantLib.updateDoc(service, dbName, doc, newDoc).then(function (doc) {
-
-        res.status(200);
-        res.set('Access-Control-Allow-Origin', '*');
-        res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-
-        res.send(doc);
-
-      }, function (err) {
-        console.error('[App] Cloudant DB Failure in update doc: ' + err)
-        res.status(500);
-        res.set('Access-Control-Allow-Origin', '*');
-        res.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-        res.send(err);
-      })
-
-
-    }, function (err) {
-
-        console.error('[App] Cloudant DB cannot find: ' + id)
-        res.status(500);
-        res.set('Access-Control-Allow-Origin', '*');
-        res.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-        res.send(err);
-    })
-
-  }
-
-  /**
-   * Purge expired documents from Cloudant database.
-   * @param {Object} res - The response object.
-   * @returns {void}
-   */
-  async function purge(res, purgeWindow, dbName) {
-
-    console.log('Purge docs in ' + dbName);
-
-    await cloudantLib.getExpiredDocs(service, purgeWindow, dbName).then(function (docs) {
-      cloudantLib.deleteDocs(service, dbName, docs);
-
-    }, function (err) {
-      console.error('[App] Cloudant DB Failure in purge docs: ' + err);
-      res.status(500);
-      res.set('Access-Control-Allow-Origin', '*');
-      res.send(err);
-    });
-  }
-
-  // ////// Helper function to get photoDb from cameraId passed in query param ///
-  function getPhotoDb(camId) {
-
-    camId = camId.toLowerCase();
-    console.log("Selected db " + camId)
-    return camId;
-  }
-
-  app.listen(port, () => {
-    console.info('[App] Listening on http://localhost:' + port)
-  })
+app.listen(port, () => {
+  console.info('[App] Listening on http://localhost:' + port)
+})
 
 function checkId(req, res) {
-    if (req.query == undefined) {
-      res.status(400);
-      res.set('Access-Control-Allow-Origin', '*');
-      res.send('Missing query parameter');
-      return null;
-    }  
-    if (req.query.id == undefined) {
-      res.status(400);
-      res.set('Access-Control-Allow-Origin', '*');
-      res.send('Missing id query parameter');
-      return null;
-    }  
-    return (req.query.id).toLowerCase();
+  if (req.query == undefined) {
+    res.status(400);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send('Missing query parameter');
+    return null;
+  }
+  if (req.query.id == undefined) {
+    res.status(400);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send('Missing id query parameter');
+    return null;
+  }
+  return (req.query.id).toLowerCase();
 }

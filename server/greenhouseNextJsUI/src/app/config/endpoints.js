@@ -33,7 +33,8 @@ const fanService = '/fan';
 const ventService = '/vent';
 const waterService = '/water';
 const pumpService = '/pump';
-const photoService = '/photos';
+const timelapsePhotoService = '/photos';
+const latestPhotoService = '/photo';
 const timelapseService = '/timelapse';
 
 // Global read/write endpoint variable (default to serviceEndpoint)
@@ -55,7 +56,8 @@ exports.fanService = fanService;
 exports.ventService = ventService;
 exports.waterService = waterService;
 exports.pumpService = pumpService;
-exports.photoService = photoService;
+exports.timelapsePhotoService = timelapsePhotoService;
+exports.latestPhotoService = latestPhotoService;
 exports.timelapseService = timelapseService;
 exports.sensecapDatalogEndpoint = sensecapDatalogEndpoint;
 exports.sensecapSoilEndpoint = sensecapSoilEndpoint;

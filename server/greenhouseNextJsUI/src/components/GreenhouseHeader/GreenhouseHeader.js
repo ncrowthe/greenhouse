@@ -188,14 +188,27 @@ const GreenhouseHeader = () => {
               </HeaderMenuItem>
             </HeaderMenu>
 
-            <HeaderMenuItem
-              label="Cam"
-              onClick={() => {
-                router.push('/cam');
-              }}
-            >
-              Cam
-            </HeaderMenuItem>
+            <HeaderMenu aria-label="Lora" menuLinkName="Cam">
+              <HeaderMenuItem
+                label="Latest"
+                onClick={() => {
+                  router.push('/camLatest');
+                }}
+              >
+                Latest
+              </HeaderMenuItem>
+
+              <HeaderMenuItem
+                label="Timelapse"
+                onClick={() => {
+                  router.push('/cam');
+                }}
+              >
+                Timelapse
+              </HeaderMenuItem>
+
+            </HeaderMenu>
+
 
             <HeaderMenuItem
               label="Settings"

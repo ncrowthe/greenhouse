@@ -38,7 +38,7 @@ function CamPage(id) {
     console.log('**CAM ID: ' + id);
 
     const camEndpoint =
-      endpoints.getEndpoint() + endpoints.photoService + '?camId=cam' + id;
+      endpoints.getEndpoint() + endpoints.timelapsePhotoService + '?camId=cam' + id;
 
     await fetch(camEndpoint, {
       method: 'get',

@@ -83,6 +83,45 @@ exports.findAllDocs = function findAllDocs(service, dbName) {
   })
 }
 
+exports.findLatestDoc = function findLatestDoc(service, dbName) {
+
+  return new Promise((resolve, reject) => {
+    service.postAllDocs({
+      db: dbName,
+      includeDocs: true,
+      limit: 250
+    }).then(response => {
+      const docs = [];
+
+      response.result.rows.forEach(function (row) {
+        const doc = row.doc;
+
+        if (doc && doc._id && !doc._id.startsWith("_design")) {
+          docs.push(doc);
+        }
+      })
+
+      docs.sort((a, b) => {
+        const aTimestamp = a.timestamp || a._id || 0;
+        const bTimestamp = b.timestamp || b._id || 0;
+
+        return aTimestamp > bTimestamp ? 1 : aTimestamp < bTimestamp ? -1 : 0;
+      });
+
+      const latestDoc = docs.length ? docs[docs.length - 1] : null;
+      const returnDocs = {
+        "Docs": latestDoc ? [latestDoc] : []
+      };
+
+      resolve(returnDocs);
+    })
+      .catch(err => {
+        console.log(err)
+        reject(err)
+      })
+  })
+}
+
 exports.getExpiredDocs = function getExpiredDocs(service, purgeWindow, dbName) {
 
   const purgeDate =  moment(new Date()).subtract(purgeWindow, 'hours').format('YYYY-MM-DDTHH:mm:ss.000z');
