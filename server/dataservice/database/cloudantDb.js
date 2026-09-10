@@ -46,7 +46,7 @@ exports.findAllDocs = function findAllDocs(service, dbName) {
     service.postAllDocs({
       db: dbName,
       includeDocs: true,
-      limit: 250
+      limit: 1000
     }).then(response => {
       console.log('***Found ' + response.result.rows.length + " docs")
 
