@@ -105,11 +105,16 @@ function CamPage(id) {
       </Column>
       <Column lg={16} md={8} sm={4} className="landing-page__content">
         <Galleria
+          autoPlay
+          showThumbnails={true}
+          showIndicators
+          showItemNavigators
+          showItemNavigatorsOnHover
+          showIndicatorsOnItem
           style={{ maxWidth: '800px' }}
           value={photos}
           item={itemTemplate}
-          autoPlay
-          transitionInterval={100}
+          transitionInterval={140}
         />
       </Column>
     </Grid>
