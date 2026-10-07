@@ -313,15 +313,16 @@ try:
 
         elapsed_time = current_time - last_photo_time
 
-        time_remaining = int((timelapse_period - elapsed_time) / 60)
+        seconds_remaining = int(timelapse_period - elapsed_time)
 
-        if (time_remaining) < 0:
-           time_remaining = 0
+        if seconds_remaining < 0:
+            seconds_remaining = 0
 
-        sense.show_message(f"{time_remaining}")
+        minutes, secs = divmod(seconds_remaining, 60)
+        sense.show_message(f"{minutes}:{secs:02d}")
 
         # Check if it's time to take a photo
-        if time_remaining <= 0:
+        if seconds_remaining <= 0:
             # Generate timestamp
             timestamp = generateTimestamp()
             log.info("Taking photo: " + str(timestamp))
