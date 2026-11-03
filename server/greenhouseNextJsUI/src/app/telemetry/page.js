@@ -150,6 +150,7 @@ function TelemetryPage() {
   const setEnv = async (event) => {
     console.log('Event: ' + JSON.stringify(event));
     config.setEnv(event);
+    setFirstRowIndex(0);
     setLoading(true);
     await getData();
     setLoading(false);
@@ -371,11 +372,15 @@ function TelemetryPage() {
       )}
 
       <Column lg={16} md={8} sm={4} className="repo-page__r1">
-        <TelemetryTable headers={headers} rows={rows} />
+        <TelemetryTable
+          headers={headers}
+          rows={rows.slice(firstRowIndex, firstRowIndex + currentPageSize)}
+        />
         <Pagination
           totalItems={rows.length}
           backwardText="Previous page"
           forwardText="Next page"
+          page={rows.length > 0 ? Math.floor(firstRowIndex / currentPageSize) + 1 : 1}
           pageSize={currentPageSize}
           pageSizes={[5, 10, 15, 25]}
           itemsPerPageText="Items per page"
