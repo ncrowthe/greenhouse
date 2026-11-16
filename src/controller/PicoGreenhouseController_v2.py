@@ -12,7 +12,7 @@ from StatusLight import StatusLight
 
 #GREENHOUSE_DATASERVICE = 'http://192.168.0.207:3000' 
 GREENHOUSE_DATASERVICE = 'http://86.4.208.162'
-DEVICE_NAME = "zone3"
+DEVICE_NAME = "zone1"
 
 
 """
@@ -23,8 +23,12 @@ The program also includes a function to display an error message with a specific
 """
 class PlantServer(object):
     
-    ssid = 'MIFI_3880'
-    password = None    
+    ssid = 'STRONG_Repeater'
+    password = 'Porker01!'
+    #ssid = "Nigel’s iPhone"
+    #password = 'Porker01!'     
+    #ssid = 'MIFI_3880'
+    #password = None    
     ipAddress = "ERR"
         
     def __init__(self):
@@ -345,4 +349,5 @@ def main():
         #machine.reset()
 
 main()
+
 
