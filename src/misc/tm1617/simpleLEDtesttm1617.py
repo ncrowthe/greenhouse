@@ -2,9 +2,9 @@ import machine
 import time
 
 # Pin Definitions (Match your physical wiring)
-STB_PIN = 17
-CLK_PIN = 20
-DIO_PIN = 26
+STB_PIN = 0
+CLK_PIN = 1
+DIO_PIN = 2
 
 
 # Initialize Pins

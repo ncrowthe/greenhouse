@@ -1,9 +1,9 @@
 from machine import Pin
 from time import sleep_us, sleep
 
-STB_PIN = 17
-CLK_PIN = 20
-DIO_PIN = 26
+STB_PIN = 0
+CLK_PIN = 1
+DIO_PIN = 2
 
 stb = Pin(STB_PIN, Pin.OUT, value=1)
 clk = Pin(CLK_PIN, Pin.OUT, value=1)

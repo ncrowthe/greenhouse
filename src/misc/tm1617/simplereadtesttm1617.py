@@ -3,8 +3,8 @@ import time
 
 # Pin Definitions
 STB_PIN = 17
-CLK_PIN = 20
-DIO_PIN = 26
+CLK_PIN = 18
+DIO_PIN = 19
 
 # Initialize Pins
 stb = machine.Pin(STB_PIN, machine.Pin.OUT, value=1)
